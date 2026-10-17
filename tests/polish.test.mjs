@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRoom,joinRoom,startHand,actionRoom,advance,legal,newDeck,settle} from '../lib/table-engine.mjs';
+import {formatAmount,STAKES} from '../public/table-config.mjs';
+const room=()=>{const r=createRoom('A','a','casual',1000,{kind:'live',variant:'holdem',stake:'cash500',buyIn:5000,capacity:3});joinRoom(r,'B','b',5000);joinRoom(r,'C','c',5000);startHand(r,1000);return r};
+const total=r=>r.stacks.reduce((a,b)=>a+b,0)+r.pot;
+test('SD formatting preserves cents and tournament units stay separate',()=>{assert.equal(formatAmount(41370),'SD 413.70');assert.equal(formatAmount(10000,'tournament'),'T10,000');assert.match(STAKES.cash1000.label,/Low Mid/)});
+test('shuffled decks contain exactly 52 unique cards',()=>{for(let n=0;n<30;n++)assert.equal(new Set(newDeck().map(c=>c.s+c.v)).size,52)});
+test('unposted player owes big blind; illegal checks rejected; calls conserve balance',()=>{const r=room();assert.equal(r.pot,75);assert.equal(legal(r,r.turn).due,50);assert.throws(()=>actionRoom(r,r.turn,'check',0,'bad',1001));const i=r.turn;actionRoom(r,i,'call',0,'call',1002);assert.equal(r.contributions[i],50);assert.equal(total(r),15000)});
+test('raise and call match full outstanding amount',()=>{const r=room(),i=r.turn;actionRoom(r,i,'raise',250,'raise',1002);assert.equal(r.bet,300);const j=r.turn,due=300-r.contributions[j],before=r.stacks[j];assert.equal(legal(r,j).call,due);actionRoom(r,j,'call',0,'call',1003);assert.equal(before-r.stacks[j],due);assert.equal(r.contributions[j],300);assert.equal(total(r),15000)});
+test('human betting timeout folds even when checking is free',()=>{const r=room();r.bet=r.contributions[r.turn];const i=r.turn;advance(r,r.turnUntil);assert.equal(r.folded[i],true);assert.equal(total(r),15000)});
+test('all-in settlement conserves total and schedules next hand at three seconds',()=>{const r=room();for(let n=0;n<30&&r.phase==='playing';n++){const i=r.turn,l=legal(r,i);actionRoom(r,i,l.max>0?'raise':'call',l.max>0?l.max:0,'act'+n,1002+n)}assert.equal(r.phase,'showdown');assert.equal(total(r),15000);assert.equal(r.lastPayouts.reduce((a,b)=>a+b,0),r.lastPot);assert.ok(r.nextHandAt>3000)});
+test('review evidence records large human losses without declaring cheating',()=>{const r=room();r.folded=[true,false,true];r.handStartStacks=[5000,5000,5000];r.stacks=[2000,2000,5000];r.committed=[3000,3000,0];r.pot=6000;settle(r,2000);assert.equal(total(r),15000);assert.ok(r.auditHands.some(e=>e.loser==='a'&&e.winner==='b'&&e.loss===3000));assert.equal(r.auditHands[0].time,2000)});

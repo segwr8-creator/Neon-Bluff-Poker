@@ -1,0 +1,43 @@
+/* A bounded compositor animation; no render loop or new media downloads. */
+#cinemaSplash{position:fixed;inset:0;z-index:10000;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 53% 65%,#153f37 0,#081b1d 42%,#03080e 80%);color:#f4e5c7;opacity:1;transition:opacity .65s ease;display:grid;place-items:center;font-family:system-ui,sans-serif}
+#cinemaSplash.departing{opacity:0;pointer-events:none}#cinemaSplash::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse,transparent 25%,#02060b99 95%);z-index:2}
+.splash-light{position:absolute;width:70vw;height:130vh;top:-55vh;left:18%;background:linear-gradient(100deg,transparent,#edd49e0b 45%,#fff5d518 52%,transparent 65%);transform:rotate(-28deg);filter:blur(18px);pointer-events:none}
+.splash-brand{position:absolute;z-index:4;top:10%;left:20px;right:20px;text-align:center;animation:splash-title 1.4s ease both}.splash-brand small{display:block;font-size:10px;letter-spacing:.5em;color:#c8ae7b;margin-bottom:16px}.splash-brand h2{margin:0;font-size:clamp(32px,5vw,65px);font-weight:500;letter-spacing:.2em;text-shadow:0 0 35px #e9ca7b28}.splash-brand p{font-size:10px;letter-spacing:.48em;color:#ad9c7f;margin-top:12px}
+.splash-stage{position:absolute;left:50%;top:59%;width:800px;height:460px;perspective:1050px;transform:translate(-50%,-50%);z-index:1}.splash-felt{position:absolute;inset:0;transform:rotateX(52deg) rotateZ(-13deg);transform-style:preserve-3d;border-radius:130px;background:radial-gradient(ellipse at 50% 40%,#225449,#102e28 75%);border:12px solid #281e18;outline:1px solid #7e643d;box-shadow:inset 0 0 0 2px #cbb07666,inset 0 0 0 17px #0b201966,inset 0 0 80px #010c08,0 25px 70px #000}
+.splash-felt::before{content:'';position:absolute;inset:30px;border:1px solid #d3bd7926;border-radius:100px;background-image:repeating-linear-gradient(25deg,#ffffff03 0 1px,transparent 1px 4px);pointer-events:none}
+.splash-card{position:absolute;left:var(--x);top:var(--y);width:135px;height:192px;border-radius:10px;background:linear-gradient(125deg,#fffff9,#eae4d3);border:1px solid #dcccad;box-shadow:0 2px 0 #c1b79f,0 8px 15px #0007;color:#171c24;transform:translateZ(3px) rotateZ(var(--angle));overflow:hidden;font-family:Georgia,serif}.splash-card.red{color:#a52030}.splash-card .splash-index{position:absolute;left:10px;top:8px;font-size:26px;line-height:.92;text-align:center}.splash-card .splash-index:last-child{left:auto;top:auto;bottom:8px;right:10px;transform:rotate(180deg)}.splash-card .splash-suit{position:absolute;inset:0;display:grid;place-items:center;font-size:84px}.splash-card::after{content:'';position:absolute;inset:-40%;background:linear-gradient(100deg,transparent 42%,#fff9 50%,transparent 57%);transform:translateX(-65%);animation:splash-card-light 6s ease both}
+.splash-chip{position:absolute;left:var(--x);top:var(--y);width:58px;height:58px;transform:translateZ(var(--height)) rotateZ(var(--spin));animation:splash-drop 2.9s linear var(--delay) both;will-change:transform;transform-style:preserve-3d}
+.splash-base-shadow{position:absolute;width:95px;height:75px;border-radius:50%;background:#0008;filter:blur(13px);left:var(--x);top:var(--y);transform:translateZ(1px);animation:splash-shadow 4s ease both}
+.splash-controls{position:absolute;z-index:5;bottom:max(6%,env(safe-area-inset-bottom));left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;gap:16px}.splash-controls p{margin:0;font-size:10px;letter-spacing:.22em;color:#b8ab90}.splash-progress{position:absolute;left:0;bottom:0;width:100%;height:2px;background:linear-gradient(90deg,#7a6037,#dfc68a);transform-origin:left;animation:splash-progress 6.4s linear both;z-index:5}
+/* Accelerating descent, small rebound, then a damped edge wobble. */
+@keyframes splash-drop{
+0%{transform:translate3d(var(--launch-x),var(--launch-y),640px) rotateX(var(--tilt)) rotateY(-32deg) rotateZ(calc(var(--spin) - 150deg));animation-timing-function:cubic-bezier(.42,0,.87,.54)}
+58%{transform:translate3d(3px,-2px,calc(var(--height) + 5px)) rotateX(9deg) rotateY(-4deg) rotateZ(calc(var(--spin) - 12deg));animation-timing-function:cubic-bezier(.15,.65,.35,1)}
+71%{transform:translate3d(1px,-1px,calc(var(--height) + 23px)) rotateX(-7deg) rotateY(5deg) rotateZ(calc(var(--spin) + 4deg));animation-timing-function:cubic-bezier(.55,0,.9,.5)}
+82%{transform:translate3d(0,0,calc(var(--height) + 2px)) rotateX(4deg) rotateY(-2deg) rotateZ(calc(var(--spin) - 2deg));animation-timing-function:ease-out}
+91%{transform:translateZ(calc(var(--height) + 1px)) rotateX(-2deg) rotateY(1deg) rotateZ(var(--spin));animation-timing-function:ease-in-out}
+100%{transform:translateZ(var(--height)) rotateX(0deg) rotateY(0deg) rotateZ(var(--spin))}}
+@keyframes splash-card-light{from{transform:translateX(-65%)}to{transform:translateX(65%)}}
+@keyframes splash-title{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes splash-shadow{from{opacity:.15}to{opacity:.85}}
+@keyframes splash-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-width:700px){.splash-stage{transform:translate(-50%,-50%) scale(.68);top:58%}.splash-brand{top:13%}.splash-controls p{font-size:8px;letter-spacing:.1em}}
+@media(max-width:440px){.splash-stage{transform:translate(-50%,-50%) scale(.47)}.splash-brand h2{font-size:30px;letter-spacing:.14em}}
+@media(max-height:540px) and (min-width:701px){.splash-brand{top:5%}.splash-brand h2{font-size:30px}.splash-brand small{margin-bottom:5px}.splash-stage{transform:translate(-50%,-50%) scale(.65);top:62%}.splash-controls{bottom:5%}}
+@media(prefers-reduced-motion:reduce){#cinemaSplash{transition:none}.splash-chip,.splash-card::after,.splash-brand,.splash-progress,.splash-base-shadow{animation:none!important}.splash-chip{will-change:auto}.splash-card::after{display:none}}
+
+/* Hold the cinematic until the visitor actually enters, including preloaded tabs. */
+#cinemaSplash:not(.playing) .splash-chip,#cinemaSplash:not(.playing) .splash-card::after,#cinemaSplash:not(.playing) .splash-base-shadow,#cinemaSplash:not(.playing) .splash-progress{animation-play-state:paused}
+#cinemaSplash:not(.playing) .splash-progress{visibility:hidden}
+
+/* Beveled faces and 32 shaded side facets form each eight-pixel cylinder. */
+.splash-chip{background:none;border:0;box-shadow:none;transform-style:preserve-3d;border-radius:0}
+.splash-chip::before,.splash-chip::after{display:none}
+.chip-disc{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;background:repeating-conic-gradient(from 10deg,#e6d9b8 0deg 13deg,var(--chip) 13deg 60deg);border:1px solid #f8eac399;box-shadow:inset 0 1px 1px #ffffffe0,inset 0 -2px 2px #0009,inset 0 0 0 3px #ffffff25;transform:translateZ(4px)}
+.chip-bottom{transform:translateZ(-4px) rotateY(180deg)}
+.chip-disc::before{content:'';position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 25% 20%,#ffffff40,transparent 65%),var(--chip);border:1px dashed #e6c99ca0;box-shadow:inset 0 1px 3px #0008}
+.chip-disc::after{content:"";position:absolute;inset:3px;border-radius:50%;background:linear-gradient(135deg,#fff6,transparent 36%,#0003 72%,#fff2);border:1px solid #ead6a566;pointer-events:none}
+.chip-disc b{position:absolute;inset:0;display:grid;place-items:center;color:#f4dfb3;font:bold 13px Georgia,serif;text-shadow:0 1px 0 #000,0 -1px 0 #ffffff50}
+.chip-rim{position:absolute;left:25px;top:26.15px;width:8px;height:5.7px;backface-visibility:hidden;transform-style:preserve-3d;background:var(--chip)}
+.chip-rim::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#ffffff55,transparent 24%,#0004 80%,#fff3),rgba(0,0,0,var(--shade));border-top:1px solid #ffffff28;border-bottom:1px solid #0004}
+#cinemaSplash.paused .splash-chip,#cinemaSplash.paused .splash-card::after,#cinemaSplash.paused .splash-base-shadow,#cinemaSplash.paused .splash-progress{animation-play-state:paused}

@@ -1,0 +1,12 @@
+#welcomeGuide{width:min(640px,94vw);max-height:88dvh;padding:clamp(18px,4vw,32px);background:linear-gradient(140deg,#242b31,#10171f);border-color:var(--metal,#c7ac79);box-shadow:0 24px 80px #0009}
+.welcomeTop,.welcomeActions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.welcomeTop>span{font-size:10px;letter-spacing:.2em;color:var(--metalLight,#ead5ac)}
+#welcomeGuide h2{font-size:clamp(25px,4vw,35px);line-height:1.12;margin:10px 0;color:#fff4df;outline:none}
+#welcomeProgress{font-size:11px;color:#c9b184;margin:14px 0 0;font-variant-numeric:tabular-nums}
+#welcomeIntro{line-height:1.6;color:#cbd3dc;margin:14px 0 20px}
+#welcomeTerms{margin:0;border-top:1px solid #ffffff20}
+#welcomeTerms dt{font-size:14px;font-weight:700;color:#f0d6a7;margin-top:15px}
+#welcomeTerms dd{margin:5px 0 14px;color:#d0d7df;font-size:13px;line-height:1.6}
+.welcomeNote{font-size:11px;line-height:1.5;color:#aebac8;border-top:1px solid #ffffff20;padding-top:14px}
+.welcomeActions{margin-top:20px}.welcomeActions button{min-height:42px}
+@media(max-width:600px){header>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end}#welcomeGuide{max-height:92dvh}#welcomeTerms dd{font-size:12px}}

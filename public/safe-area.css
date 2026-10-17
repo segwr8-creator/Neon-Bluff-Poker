@@ -1,0 +1,58 @@
+/* Shared by the standalone game and the Next.js shell. Plain CSS works in both;
+   @theme alone would not define variables in the unprocessed game stylesheet. */
+:root {
+  --padding-safe-top: env(safe-area-inset-top, 0px);
+  --padding-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --padding-safe-left: env(safe-area-inset-left, 0px);
+  --padding-safe-right: env(safe-area-inset-right, 0px);
+}
+html { box-sizing: border-box; overflow-x: hidden; }
+*, *::before, *::after { box-sizing: inherit; }
+/* Apply insets once. Padding both html and body would double the safe area. */
+html body {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding: var(--padding-safe-top) var(--padding-safe-right)
+           var(--padding-safe-bottom) var(--padding-safe-left);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+/* Fill the body's safe content box rather than another full viewport. This keeps
+   the existing in-flow betting panel and sidebars above the home indicator. */
+body > main { height: 100%; min-height: 0; min-width: 0; }
+
+/* Native top-layer dialogs are positioned against the viewport, not body padding. */
+html body dialog {
+  inset: var(--padding-safe-top) var(--padding-safe-right)
+         var(--padding-safe-bottom) var(--padding-safe-left);
+  max-width: calc(100vw - var(--padding-safe-left) - var(--padding-safe-right) - 2em);
+  max-height: min(90dvh, calc(100dvh - var(--padding-safe-top) - var(--padding-safe-bottom) - 2em));
+}
+html body #preferences { max-height: min(92dvh, calc(100dvh - var(--padding-safe-top) - var(--padding-safe-bottom) - 2em)); }
+html body #welcomeGuide { max-height: min(88dvh, calc(100dvh - var(--padding-safe-top) - var(--padding-safe-bottom) - 2em)); }
+@media (max-width: 600px) {
+  html body #welcomeGuide { max-height: min(92dvh, calc(100dvh - var(--padding-safe-top) - var(--padding-safe-bottom) - 2em)); }
+}
+#cinemaSplash .splash-brand {
+  margin-top: var(--padding-safe-top);
+  left: calc(20px + var(--padding-safe-left));
+  right: calc(20px + var(--padding-safe-right));
+}
+#cinemaSplash .splash-controls {
+  left: calc(24px + var(--padding-safe-left));
+  right: calc(24px + var(--padding-safe-right));
+  bottom: max(6%, calc(12px + var(--padding-safe-bottom)));
+}
+/* Opt-in only: current poker controls stay in their existing grid row. A future
+   fixed dock must reserve its height in content to avoid covering the table. */
+.mobile-sticky-dock {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: calc(1rem + var(--padding-safe-bottom));
+  padding-left: calc(1rem + var(--padding-safe-left));
+  padding-right: calc(1rem + var(--padding-safe-right));
+  box-sizing: border-box;
+}

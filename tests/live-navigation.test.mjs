@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const html=readFileSync(new URL('../public/game.html',import.meta.url),'utf8');
+const handler=html.slice(html.indexOf('async function openLiveSetup()'),html.indexOf('function prepareLiveMode()'));
+for(const activeRoom of [null,'saved-computer-table','saved-live-table'])test('Play Live opens setup on first and repeated clicks with '+activeRoom,async()=>{const calls=[],elements={liveBrowser:{open:false,showModal(){this.open=true;calls.push('setup')}},savedSeatNotice:{classList:{toggle(...args){calls.push(args)}}},liveError:{textContent:''}};let restoreCalls=0;const ctx=vm.createContext({$:id=>elements[id],prepareLiveMode(){},beginMusic(){},ensureProfile:async()=>{},playerProfile:{activeRoom},refreshTables:async()=>calls.push('list'),resumeProfileRoom:async()=>restoreCalls++});vm.runInContext(handler,ctx);await ctx.openLiveSetup();assert.equal(calls[0],'setup');assert.equal(restoreCalls,0);elements.liveBrowser.open=false;await ctx.openLiveSetup();assert.equal(calls.filter(x=>x==='setup').length,2);assert.equal(restoreCalls,0)});
+test('Live setup stays visible when profile loading fails',async()=>{const dialog={open:false,showModal(){this.open=true}},error={textContent:''};const ctx=vm.createContext({$:id=>id==='liveBrowser'?dialog:error,prepareLiveMode(){},beginMusic(){},ensureProfile:async()=>{throw Error('Offline')},refreshTables:async()=>{}});vm.runInContext(handler,ctx);await ctx.openLiveSetup();assert.equal(dialog.open,true);assert.equal(error.textContent,'Offline')});

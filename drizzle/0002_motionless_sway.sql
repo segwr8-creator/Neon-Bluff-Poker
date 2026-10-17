@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `cash_balance` integer DEFAULT 50000 NOT NULL;

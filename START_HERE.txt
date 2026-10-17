@@ -1,0 +1,1 @@
+Root: NEON_BLUFF. Read docs/RUNTIME_CONTEXT.md for Cloudflare, Vercel/local database and mobile API configuration. Read docs/VERCEL.md for Vercel build setup. Full source and media included; no secrets or player database. Mobile frontend bundles must call the hosted API and must not bundle server route/platform modules.
