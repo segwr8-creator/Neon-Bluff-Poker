@@ -21,7 +21,7 @@ const localBindingConfig = {
     ? [
         {
           binding: d1,
-          database_name: "database_name: "neon-bluff-db",
+          database_name:"neon-bluff-db",
           database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
         },
       ]
