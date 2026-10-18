@@ -69,6 +69,29 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug bundleRelease
+      - name: Sign release bundle
+        working-directory: mobile/android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEYSTORE_BASE64:?Missing signing key secret}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing signing password secret}"
+          umask 077
+          signing_key="$(mktemp "$RUNNER_TEMP/neon-upload-XXXXXX.p12")"
+          trap 'rm -f "$signing_key"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$signing_key"
+          jarsigner \
+            -keystore "$signing_key" \
+            -storetype PKCS12 \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -keypass:env ANDROID_KEYSTORE_PASSWORD \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            app/build/outputs/bundle/release/app-release.aab upload
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
           name: neon-bluff-android-${{ github.run_number }}
