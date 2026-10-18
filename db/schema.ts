@@ -46,8 +46,8 @@ export const messages=sqliteTable('messages',{
  id:text('id').primaryKey(),pair:text('pair').notNull(),sender:text('sender').notNull(),body:text('body').notNull(),created:integer('created').notNull(),
 },t=>[index('messages_pair_created').on(t.pair,t.created)]);
 export const gifts=sqliteTable('gifts',{
- id:text('id').primaryKey(),sender:text('sender').notNull(),recipient:text('recipient').notNull(),amount:integer('amount').notNull(),status:text('status').notNull(),mutation:text('mutation'),created:integer('created').notNull(),
-},t=>[index('gifts_recipient_created').on(t.recipient,t.created)]);
+ id:text('id').primaryKey(),sender:text('sender').notNull(),recipient:text('recipient').notNull(),amount:integer('amount').notNull(),status:text('status').notNull(),mutation:text('mutation'),acceptedAt:integer('accepted_at'),created:integer('created').notNull(),
+},t=>[index('gifts_recipient_created').on(t.recipient,t.created),index('gifts_sender_accepted').on(t.sender,t.acceptedAt),index('gifts_recipient_accepted').on(t.recipient,t.acceptedAt)]);
 
 // Review evidence only: a shared table loss does not establish collusion.
 export const fairPlaySignals=sqliteTable('fair_play_signals',{

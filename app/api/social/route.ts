@@ -2,6 +2,7 @@ import { allowedApiOrigin, withApiAccess, apiOptions } from '../../../lib/api-or
 import { roomDb } from '../../../db';
 import { account, response } from '../../../lib/monetization';
 import { aggression } from '../../../public/table-config.mjs';
+import { GIFT_MAX, GIFT_DAILY_MAX, giftDayStart, GIFT_ACCEPT_SQL } from '../../../public/gift-policy.mjs';
 export const dynamic='force-dynamic';
 const pairId=(a:string,b:string)=>[a,b].sort().join(':');
 async function handle(req:Request){try{
@@ -14,13 +15,14 @@ async function handle(req:Request){try{
   return response({friends:rows.results.map((r:any)=>({id:r.sender===p.id?r.recipient:r.sender,name:r.name,status:r.status,incoming:r.recipient===p.id})),gifts:incoming.results});
  }
  if(op==='gift-accept'||op==='gift-decline'){
+  if(req.method!=='POST')return response({error:'Use POST for gifts.'},405);
   if(typeof body.id!=='string')throw new Error('Invalid gift.');const g:any=await db.prepare('SELECT * FROM gifts WHERE id=? AND recipient=?').bind(body.id,p.id).first();if(!g)throw new Error('Gift not found.');
   if(op==='gift-decline'){await db.prepare("UPDATE gifts SET status='declined' WHERE id=? AND recipient=? AND status='pending'").bind(g.id,p.id).run();return response({ok:true})}
   const mutation=crypto.randomUUID();const results=await db.batch([
-   db.prepare("UPDATE gifts SET status='accepted',mutation=? WHERE id=? AND recipient=? AND status='pending' AND created>? AND EXISTS (SELECT 1 FROM profiles WHERE id=? AND cash_balance>=? AND gift_locked=0) AND EXISTS (SELECT 1 FROM friendships WHERE pair=? AND status='accepted')").bind(mutation,g.id,p.id,now-86400000,g.sender,g.amount,pairId(g.sender,p.id)),
+   db.prepare(GIFT_ACCEPT_SQL).bind(mutation,now,g.id,p.id,now-86400000,g.sender,g.amount,pairId(g.sender,p.id),g.sender,giftDayStart(now),p.id,giftDayStart(now)),
    db.prepare('UPDATE profiles SET cash_balance=cash_balance-?,updated=? WHERE id=? AND EXISTS (SELECT 1 FROM gifts WHERE id=? AND mutation=?)').bind(g.amount,now,g.sender,g.id,mutation),
    db.prepare('UPDATE profiles SET cash_balance=cash_balance+?,updated=? WHERE id=? AND EXISTS (SELECT 1 FROM gifts WHERE id=? AND mutation=?)').bind(g.amount,now,p.id,g.id,mutation)
-  ]);if(!results[0].meta.changes)throw new Error('Gift already handled, expired, or no longer affordable.');return response({ok:true});
+  ]);if(!results[0].meta.changes)throw new Error('Gift already handled, expired, unaffordable, or a daily gift limit has been reached.');return response({ok:true});
  }
  if(typeof target!=='string'||!/^[a-f0-9]{64}$/.test(target)||target===p.id)throw new Error('Choose another human player.');
  const peer:any=await db.prepare('SELECT id,name,created,stats FROM profiles WHERE id=?').bind(target).first();if(!peer)throw new Error('Player not found.');
@@ -47,7 +49,11 @@ async function handle(req:Request){try{
   await db.prepare('INSERT INTO messages (id,pair,sender,body,created) VALUES (?,?,?,?,?)').bind(crypto.randomUUID(),pair,p.id,body.message.trim(),now).run();return response({ok:true});
  }
  if(op==='gift'){
-  const n=body.amount;if(p.gift_locked)throw new Error('Ad-reward accounts cannot send chip gifts.');if(!Number.isSafeInteger(n)||n<5||n%5||n>p.cash_balance)throw new Error('Choose an affordable gift in $0.05 increments.');
+  if(req.method!=='POST')return response({error:'Use POST for gifts.'},405);
+  const n=body.amount;if(p.gift_locked)throw new Error('Ad-reward accounts cannot send chip gifts.');if(!Number.isSafeInteger(n)||n<5||n%5||n>GIFT_MAX||n>p.cash_balance)throw new Error('Choose an affordable gift from SD 0.05 to SD 25.00 in SD 0.05 increments.');
+  const sent:any=await db.prepare("SELECT COALESCE(SUM(amount),0) amount FROM gifts WHERE sender=? AND status='accepted' AND accepted_at>=?").bind(p.id,giftDayStart(now)).first();
+  const received:any=await db.prepare("SELECT COALESCE(SUM(amount),0) amount FROM gifts WHERE recipient=? AND status='accepted' AND accepted_at>=?").bind(target,giftDayStart(now)).first();
+  if(sent.amount+n>GIFT_DAILY_MAX||received.amount+n>GIFT_DAILY_MAX)throw new Error('The daily SD 50 sent or received gift limit would be exceeded.');
   const recent:any=await db.prepare('SELECT COUNT(*) n FROM gifts WHERE sender=? AND created>?').bind(p.id,now-3600000).first();if(recent.n>=10)throw new Error('Please wait before sending more gift requests.');
   await db.prepare("INSERT INTO gifts (id,sender,recipient,amount,status,created) VALUES (?,?,?,?,'pending',?)").bind(crypto.randomUUID(),p.id,target,n,now).run();return response({ok:true,message:'Gift requested. Chips transfer only when your friend accepts; your balance is checked again then.'});
  }

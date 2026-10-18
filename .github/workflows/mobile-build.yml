@@ -1,0 +1,135 @@
+name: Mobile build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.25.0'
+      - run: pnpm install --frozen-lockfile
+      - run: python3 tests/gift-limits.py
+      - run: pnpm run build
+      - run: node mobile/prepare-web.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-web
+          path: mobile/www/
+          if-no-files-found: error
+          retention-days: 7
+  android:
+    needs: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: mobile-web
+          path: mobile/www
+      - name: Add native platform if absent
+        run: |
+          if [ ! -d android ]; then
+            npx --no-install cap add android
+          fi
+      - run: npx --no-install cap sync android
+      - run: python3 configure-native.py android
+      - name: Compile debug APK and unsigned release AAB
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neon-bluff-android-${{ github.run_number }}
+          path: |
+            mobile/android/app/build/outputs/apk/debug/*.apk
+            mobile/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
+  ios:
+    needs: web
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Select installed Xcode 26
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          choices = sorted(Path('/Applications').glob('Xcode_26*.app'))
+          if not choices:
+              raise SystemExit('This runner needs Xcode 26+. Select a compatible macOS runner.')
+          subprocess.run(['sudo', 'xcode-select', '-s', str(choices[-1] / 'Contents/Developer')], check=True)
+          PY
+      - run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v4
+        with:
+          name: mobile-web
+          path: mobile/www
+      - name: Add native platform if absent
+        run: |
+          if [ ! -d ios ]; then
+            npx --no-install cap add ios
+          fi
+      - run: npx --no-install cap sync ios
+      - run: python3 configure-native.py ios
+      - name: Package native project for signing later
+        run: zip -qr ios-project.zip ios www capacitor.config.json package.json package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neon-bluff-ios-source-${{ github.run_number }}
+          path: mobile/ios-project.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Compile iOS simulator app (not an IPA)
+        run: >-
+          xcodebuild -project ios/App/App.xcodeproj -scheme App
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath ios-build CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator build
+        run: ditto -c -k --sequesterRsrc --keepParent ios-build/Build/Products/Debug-iphonesimulator/App.app ios-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neon-bluff-ios-simulator-${{ github.run_number }}
+          path: mobile/ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,10 @@
+{
+  "appId": "com.keldon.neonbluff",
+  "appName": "Neon Bluff: After Dark",
+  "webDir": "www",
+  "backgroundColor": "#090b15",
+  "loggingBehavior": "none",
+  "server": {"hostname": "localhost", "androidScheme": "https", "iosScheme": "capacitor", "cleartext": false},
+  "android": {"allowMixedContent": false, "webContentsDebuggingEnabled": false, "zoomEnabled": false},
+  "ios": {"contentInset": "never", "scrollEnabled": false, "zoomEnabled": false, "webContentsDebuggingEnabled": false}
+}

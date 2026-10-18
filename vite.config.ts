@@ -17,11 +17,12 @@ const managedLinux = readExecutionProfile() === "managed-linux";
 const localBindingConfig = {
   main: "./build/sites-worker.ts",
   compatibility_flags: ["nodejs_compat"],
+  vars: { MOBILE_ALLOWED_ORIGINS: "https://localhost,capacitor://localhost" },
   d1_databases: d1
     ? [
         {
           binding: d1,
-          database_name:"neon-bluff-db",
+          database_name: "neon-bluff-db",
           database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
         },
       ]

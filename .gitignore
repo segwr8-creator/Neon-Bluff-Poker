@@ -49,3 +49,14 @@ next-env.d.ts
 /NEON_BLUFF_Runtime_Updated.zip
 /node_modules/
 /package-lock.json
+
+# Neon Bluff native build outputs
+/mobile/node_modules/
+/mobile/www/
+/mobile/android/
+/mobile/ios/
+/mobile/ios-build/
+/mobile/ios-project.zip
+/mobile/ios-simulator.zip
+/NEON_BLUFF_Mobile_Update/
+/NEON_BLUFF_Mobile_Update.zip
