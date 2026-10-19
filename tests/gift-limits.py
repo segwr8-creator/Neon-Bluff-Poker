@@ -17,7 +17,7 @@ class GiftTests(unittest.TestCase):
   db.commit();db.close()
  def tearDown(self): self.tmp.cleanup()
  def connect(self):return sqlite3.connect(self.file,timeout=10)
- def gift(self,id,amount=2500,s='s',r='r',created=NOW):
+ def gift(self,id,amount=POLICY['GIFT_MAX'],s='s',r='r',created=NOW):
   with self.connect() as db:db.execute("INSERT INTO gifts(id,sender,recipient,amount,status,created) VALUES(?,?,?,?,'pending',?)",(id,s,r,amount,created))
  def accept(self,id,now=NOW):
   db=self.connect()
@@ -34,14 +34,14 @@ class GiftTests(unittest.TestCase):
   self.gift('a');self.assertEqual(self.accept('a'),1);self.assertEqual(self.accept('a'),0)
   with self.connect() as db:self.assertEqual(db.execute('SELECT SUM(cash_balance) FROM profiles').fetchone()[0],400000)
  def test_sender_limit_race_across_friends(self):
-  for i in range(3):self.gift(str(i),r='r' if i!=2 else 'r2')
-  with concurrent.futures.ThreadPoolExecutor(3) as pool: results=list(pool.map(self.accept,map(str,range(3))))
-  self.assertEqual(sum(results),2)
+  for i in range(4):self.gift(str(i),r='r' if i!=3 else 'r2')
+  with concurrent.futures.ThreadPoolExecutor(4) as pool: results=list(pool.map(self.accept,map(str,range(4))))
+  self.assertEqual(sum(results),3)
  def test_recipient_limit_across_senders(self):
-  self.gift('a');self.gift('b');self.gift('c',s='s2')
-  self.assertEqual([self.accept(x) for x in ['a','b','c']],[1,1,0])
+  self.gift('a');self.gift('b');self.gift('c',s='s2');self.gift('d',s='s2')
+  self.assertEqual([self.accept(x) for x in ['a','b','c','d']],[1,1,1,0])
  def test_rejected_amounts(self):
-  for i,n in enumerate([0,4,6,2505,-5]):
+  for i,n in enumerate([0,4,6,POLICY['GIFT_MAX']+5,-5]):
    self.gift(str(i),n);self.assertEqual(self.accept(str(i)),0)
  def test_approval_expiry_and_affordability(self):
   self.gift('expired',created=NOW-86400001);self.assertEqual(self.accept('expired'),0)
@@ -57,7 +57,8 @@ class GiftTests(unittest.TestCase):
   # The request was yesterday; accepting it today must consume today's quota.
   self.gift('a',created=DAY-1000);self.assertEqual(self.accept('a'),1)
   self.gift('b');self.assertEqual(self.accept('b'),1)
-  self.gift('c');self.assertEqual(self.accept('c'),0)
+  self.gift('c');self.assertEqual(self.accept('c'),1)
+  self.gift('over');self.assertEqual(self.accept('over'),0)
   tomorrow=DAY+86400000+1000
   self.gift('d',created=tomorrow);self.assertEqual(self.accept('d',tomorrow),1)
 if __name__=='__main__':unittest.main()

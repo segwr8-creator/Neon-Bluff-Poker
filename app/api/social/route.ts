@@ -53,7 +53,7 @@ async function handle(req:Request){try{
   const n=body.amount;if(p.gift_locked)throw new Error('Ad-reward accounts cannot send chip gifts.');if(!Number.isSafeInteger(n)||n<5||n%5||n>GIFT_MAX||n>p.cash_balance)throw new Error('Choose an affordable gift from SD 0.05 to SD 25.00 in SD 0.05 increments.');
   const sent:any=await db.prepare("SELECT COALESCE(SUM(amount),0) amount FROM gifts WHERE sender=? AND status='accepted' AND accepted_at>=?").bind(p.id,giftDayStart(now)).first();
   const received:any=await db.prepare("SELECT COALESCE(SUM(amount),0) amount FROM gifts WHERE recipient=? AND status='accepted' AND accepted_at>=?").bind(target,giftDayStart(now)).first();
-  if(sent.amount+n>GIFT_DAILY_MAX||received.amount+n>GIFT_DAILY_MAX)throw new Error('The daily SD 50 sent or received gift limit would be exceeded.');
+  if(sent.amount+n>GIFT_DAILY_MAX||received.amount+n>GIFT_DAILY_MAX)throw new Error('The daily SD 300 sent or received gift limit would be exceeded.');
   const recent:any=await db.prepare('SELECT COUNT(*) n FROM gifts WHERE sender=? AND created>?').bind(p.id,now-3600000).first();if(recent.n>=10)throw new Error('Please wait before sending more gift requests.');
   await db.prepare("INSERT INTO gifts (id,sender,recipient,amount,status,created) VALUES (?,?,?,?,'pending',?)").bind(crypto.randomUUID(),p.id,target,n,now).run();return response({ok:true,message:'Gift requested. Chips transfer only when your friend accepts; your balance is checked again then.'});
  }
